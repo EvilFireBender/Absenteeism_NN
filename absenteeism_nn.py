@@ -28,8 +28,8 @@ for column in data:
     # or divide by x.max() - x.min()
 
 # Divide the output data into three categories
-data.at[data['Absenteeism time in hours'] <= 20, ['Absenteeism time in hours']] = 0
-data.at[data['Absenteeism time in hours'] > 80, ['Absenteeism time in hours']] = 2
+data.at[data['Absenteeism time in hours'] <= 10, ['Absenteeism time in hours']] = 0
+data.at[data['Absenteeism time in hours'] > 40, ['Absenteeism time in hours']] = 2
 data.at[data['Absenteeism time in hours'] > 2, ['Absenteeism time in hours']] = 1
 
 
@@ -70,8 +70,8 @@ input_neurons = n_features # n_features = 46
 # the number of hidden neurons usually lies between the number of input and output units. So we start with their mean
 hidden_neurons = 24
 output_neurons = 3
-learning_rate = 0.01
-num_epoch = 500
+learning_rate = 0.5
+num_epoch = 5000
 
 
 # define a customised neural network structure
