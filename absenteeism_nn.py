@@ -68,7 +68,7 @@ Section Two: Building the neural network
 # define learning rate and number of epochs on training
 input_neurons = n_features # n_features = 46
 # the number of hidden neurons usually lies between the number of input and output units. So we start with their mean
-hidden_neurons = 20
+hidden_neurons = 24
 output_neurons = 3
 learning_rate = 0.5
 num_epoch = 5000
