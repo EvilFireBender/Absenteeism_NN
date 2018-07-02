@@ -21,10 +21,6 @@ one_hot = pd.get_dummies(data['Reason for absence'])
 data = data.drop('Reason for absence', axis=1)
 data = one_hot.join(data)
 
-# one_hot2 = pd.get_dummies(data['Month of absence'])
-# data = data.drop('Month of absence', axis=1)
-# data = one_hot2.join(data)
-
 # normalise input data
 for column in data:
     # the last column is target
@@ -61,7 +57,7 @@ X = Variable(torch.Tensor(train_input.as_matrix()).float())
 Y = Variable(torch.Tensor(train_target.as_matrix()).long())
 
 """
-Section 2: Building the neural network
+Section 2: Building the neural networks
 """
 
 input_neurons = n_features  # n_features = 46
@@ -72,28 +68,42 @@ learning_rate = 0.5
 num_epoch = 5000
 
 
-# define a customised neural network structure
+# define a simple neural network
 class TwoLayerNet(torch.nn.Module):
     def __init__(self, n_input, n_hidden, n_output):
         super(TwoLayerNet, self).__init__()
-        # define linear hidden layer output
         self.hidden = torch.nn.Linear(n_input, n_hidden)
-        # define linear output layer output
         self.out = torch.nn.Linear(n_hidden, n_output)
 
     def forward(self, x):
-        # get hidden layer input
         h_input = self.hidden(x)
-        # define activation function for hidden layer
         h_output = F.sigmoid(h_input)
-        # get output layer output
         y_pred = self.out(h_output)
+
+        return y_pred
+
+
+# define a deep neural network
+class DeepNet(torch.nn.Module):
+    def __init__(self, n_input, n_hidden_1, n_hidden_2, n_output):
+        super(DeepNet, self).__init__()
+        self.layer_1 = torch.nn.Linear(n_input, n_hidden_1)
+        self.layer_2 = torch.nn.Linear(n_hidden_1, n_hidden_2)
+        self.layer3 = torch.nn.Linear(n_hidden_2, n_output)
+
+    def forward(self, x):
+        h_input = self.layer_1(x)
+        h_output_l1 = F.sigmoid(h_input)
+        h_output_l2 = F.sigmoid(h_output_l1)
+        y_pred = self.layer_3(h_output_l2)
 
         return y_pred
 
 
 # define a neural network using the customised structure
 net = TwoLayerNet(input_neurons, hidden_neurons, output_neurons)
+
+# d_net = DeepNet(input_neurons, hidden_neurons, hidden_neurons, output_neurons)
 
 # define loss function
 loss_func = torch.nn.CrossEntropyLoss()
@@ -104,9 +114,10 @@ optimiser = torch.optim.SGD(net.parameters(), lr=learning_rate)
 # store all losses for visualisation
 all_losses = []
 
-hidden_layer_biases = torch.zeros([24, 1])
+"""
+Section 3: Training the network
+"""
 
-# train a neural network
 for epoch in range(num_epoch):
     # Perform forward pass: compute predicted y by passing x to the model.
     Y_pred = net(X)
@@ -118,7 +129,7 @@ for epoch in range(num_epoch):
     # print progress
     if epoch % 50 == 0:
         # convert three-column predicted Y values to one column for comparison
-        _, predicted = torch.max(F.softmax(Y_pred), 1)
+        _, predicted = torch.max(F.softmax(Y_pred, dim=1), 1)
 
         # calculate and print accuracy
         total = predicted.size(0)
@@ -133,49 +144,14 @@ for epoch in range(num_epoch):
 
     optimiser.step()
 
-    # for child in net.children():
-    #     print(child)
-    #     for name, param in child.named_parameters():
-    #         if name == 'bias':
-    #             print(param)
-    #     break
-
-    for child in net.children():
-        for name, param in child.named_parameters():
-            if name == 'bias':
-                if epoch == 0:
-                    hidden_layer_biases = param
-                else:
-                    hidden_layer_biases = hidden_layer_biases + param
-        break
-
-
-print(hidden_layer_biases)
-hidden_layer_biases = hidden_layer_biases.abs()
-
-
-# Plotting the error-epoch graph
-plt.figure()
-plt.plot(all_losses)
-plt.show()
-
-# for child in net.children():
-#     print(child)
-#     for name, param in child.named_parameters():
-#         print(name)
-#         print(param)
-#         if name == 'bias':
-#             hidden_layer_biases = param
-#     break
-#
-# print(hidden_layer_biases)
-# hidden_layer_biases = hidden_layer_biases + param
-# print(hidden_layer_biases)
+"""
+Plotting confusion matrix for training
+"""
 
 confusion = torch.zeros(output_neurons, output_neurons)
 
 Y_pred = net(X)
-_, predicted = torch.max(F.softmax(Y_pred), 1)
+_, predicted = torch.max(F.softmax(Y_pred, dim=1), 1)
 
 for i in range(train_data.shape[0]):
     actual_class = Y.data[i]
@@ -188,7 +164,7 @@ print('Confusion matrix for training:')
 print(confusion)
 
 """
-Section 3: Testing the neural network
+Section 4: Testing the neural network
 """
 
 X_test = Variable(torch.Tensor(test_input.as_matrix()).float())
@@ -205,7 +181,7 @@ correct_test = sum(predicted_test.data.numpy() == Y_test.data.numpy())
 print('Testing Accuracy: %.2f %%' % (100 * correct_test / total_test))
 
 """
-Section 4: Evaluating the Results
+Plotting confusion matrix for testing
 
 """
 
@@ -220,3 +196,75 @@ for i in range(test_data.shape[0]):
 print('')
 print('Confusion matrix for testing:')
 print(confusion_test)
+
+"""
+Section 5: Pruning by badness:
+
+The badness factor for a hidden unit is the sum of back-propagated error
+components over all patterns.
+"""
+
+i = 0  # loop variable
+all_errors = torch.zeros(24)  # storage for cumulative errors of all hidden nodes
+
+while i < train_input.shape[0]:
+    pattern = Variable(torch.Tensor(train_input[i:i + 5].as_matrix()).float())  # Batching input into patterns
+    pattern_target = Variable(torch.Tensor(train_target[i:i + 5].as_matrix()).long())
+    pattern_pred = net(pattern)
+    net_loss = loss_func(pattern_pred, pattern_target)  # feeding pattern forward through the network
+    # print(net.out.weight)
+    temp_tensor = torch.sum(net.out.weight.grad, 0)
+    all_errors.add_(temp_tensor.data)  # adding errors at hidden nodes to the previously accumulated error components
+    # temp_tensor.data is used because temp_tensor is a Variable, and all_errors is a floatTensor
+    i += 5
+
+all_errors = all_errors.abs()
+# print(all_errors)
+max_error = all_errors.max()
+index = (all_errors == max_error).nonzero()
+# print(max_error, index)
+# Setting all connections out of the 'bad' node to 0, effectively pruning it
+net.out.weight.data[:, index] = 0.0
+net.out.weight.data[:, index].requires_grad = False  # Making sure that the values at that remain zero
+# print(net.out.weight)
+
+"""
+Section 6: Testing the neural network after pruning
+"""
+
+X_test = Variable(torch.Tensor(test_input.as_matrix()).float())
+Y_test = Variable(torch.Tensor(test_target.as_matrix()).long())
+
+Y_pred_test = net(X_test)
+
+_, predicted_test = torch.max(Y_pred_test, 1)
+
+# calculate accuracy
+total_test = predicted_test.size(0)
+correct_test = sum(predicted_test.data.numpy() == Y_test.data.numpy())
+
+print('Testing Accuracy: %.2f %%' % (100 * correct_test / total_test))
+
+"""
+Plotting confusion matrix for testing
+
+"""
+
+confusion_test = torch.zeros(output_neurons, output_neurons)
+
+for i in range(test_data.shape[0]):
+    actual_class = Y_test.data[i]
+    predicted_class = predicted_test.data[i]
+
+    confusion_test[actual_class][predicted_class] += 1
+
+print('')
+print('Confusion matrix for testing:')
+print(confusion_test)
+
+"""
+Plotting the error-epoch graph
+"""
+plt.figure()
+plt.plot(all_losses)
+plt.show()
