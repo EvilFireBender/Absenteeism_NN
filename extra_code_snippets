@@ -1,0 +1,66 @@
+"""
+Rough code that I wrote while attempting different strategies for pruning.
+
+Does not contribute to the main program anymore. Just been placed here for reference.
+
+"""
+
+# print(net.out.weight)
+# dummy = Variable(net.out.weight.data)
+# print(dummy)
+# dummy[ :, index] = 0.0
+# print(dummy)
+
+
+# index_tensor = Variable(torch.LongTensor(0), requires_grad=False)
+# net.out.weight.index_fill_(1, index_tensor, 0.0)
+# print(net.out.weight)
+
+# net.out.weight.index_fill()
+# print(net.out.weight)
+
+# Find the index of this max error node. Access it using Tensor indices within net.out.weight[index], set it to zero.
+# Set require_grad to false
+
+#
+# for name, child in net.named_children():
+#     if name == 'out':
+#         print(name)
+#         for name2, param in child.named_parameters():
+#             print(name2)
+#             print("This is what a parameter looks like - \n", param)
+#             break
+
+# counter = 1
+# for x in X:
+#     ff = net.forward(x)
+#     print(ff)
+
+# for row in train_input.iterrows():
+#     if counter == 1:
+#         temp_tensor = torch.Tensor(row)
+#         print(temp_tensor)
+#     break
+    # else:
+    #     temp_tensor.cat()
+# for x in X:
+#     ff = net(X)
+#     while i < Y.size():
+#         net_loss = loss_func(ff, Y[i])
+
+# i = 0
+# for x in X:
+#     ff = net(x)
+#     net_loss = loss_func(ff, Y[i])
+#     i += 1
+    # iterRows makes a Series -> Series object has no attribute 'dim'. iterTuple -> 'Pandas' object has
+    #  no attribute 'dim'
+    # print(loss_func(ff, train_target[index]))
+
+# divide loss in proportion of hidden layer weights. Store in a loss list, add values to list for every iteration.
+
+# for child in net.children():
+#     for param in child.parameters():
+#         print("This is what a parameter looks like - \n",param)
+#         break
+#     break
